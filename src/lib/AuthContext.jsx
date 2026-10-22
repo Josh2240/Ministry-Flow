@@ -108,15 +108,28 @@ export const AuthProvider = ({ children }) => {
   const logout = (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
+    if (typeof base44.auth.logout === "function") {
+      try {
+        base44.auth.logout();
+      } catch (e) {
+        // ignore
+      }
+    }
     if (shouldRedirect) {
-      base44.auth.logout(window.location.href);
-    } else {
-      base44.auth.logout();
+      window.location.href = "/login";
     }
   };
 
   const navigateToLogin = () => {
-    base44.auth.redirectToLogin(window.location.href);
+    if (typeof base44.auth.redirectToLogin === "function") {
+      try {
+        base44.auth.redirectToLogin(window.location.href);
+        return;
+      } catch (e) {
+        // ignore
+      }
+    }
+    window.location.href = "/login";
   };
 
   return (
