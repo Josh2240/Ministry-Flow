@@ -1,12 +1,13 @@
 export const base44 = {
   app: {
-    getPublicSettings: async () => ({ id: "local", public_settings: {} })
+    getPublicSettings: async () => ({ id: "local", public_settings: {} }),
   },
   auth: {
-    me: async () => ({ id: "local", full_name: "Local User", email: "local@example.com" }),
-    logout: () => { window.location.href = "/login"; },
-    redirectToLogin: (returnUrl) => { window.location.href = `/login?returnTo=${encodeURIComponent(returnUrl || "/")}`; }
+    me: async () => ({ id: "local-user", full_name: "Local User", email: "user@example.com" }),
+    /** @param {string} [returnUrl] */
+    logout: (returnUrl) => {},
+    /** @param {string} [returnUrl] */
+    redirectToLogin: (returnUrl) => {},
   },
   entities: {},
-  functions: {}
 };

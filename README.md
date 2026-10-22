@@ -21,7 +21,7 @@ Three commands, from the project root:
 ```bash
 base44 login   # one-time per machine
 base44 link    # one-time per clone
-base44 dev     # local backend + frontend together
+npm start      # local backend + frontend together (runs base44 dev)
 ```
 
 Open the frontend URL that `base44 dev` prints (typically `http://localhost:5173`).
