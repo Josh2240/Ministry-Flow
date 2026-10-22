@@ -1,0 +1,49 @@
+{
+  "name": "Setlist",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "service_id": {
+      "type": "string"
+    },
+    "service_title": {
+      "type": "string"
+    },
+    "service_date": {
+      "type": "string",
+      "description": "Date in YYYY-MM-DD format"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "song_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "song_key": {
+            "type": "string"
+          },
+          "sequence_notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

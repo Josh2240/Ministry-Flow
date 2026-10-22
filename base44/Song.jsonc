@@ -1,0 +1,36 @@
+{
+  "name": "Song",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "artist": {
+      "type": "string"
+    },
+    "song_key": {
+      "type": "string"
+    },
+    "tempo": {
+      "type": "number"
+    },
+    "ccli_number": {
+      "type": "string"
+    },
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "youtube_url": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

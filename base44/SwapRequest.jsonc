@@ -1,0 +1,55 @@
+{
+  "name": "SwapRequest",
+  "type": "object",
+  "properties": {
+    "assignment_id": {
+      "type": "string"
+    },
+    "service_id": {
+      "type": "string"
+    },
+    "service_title": {
+      "type": "string"
+    },
+    "service_date": {
+      "type": "string",
+      "description": "Date in YYYY-MM-DD format"
+    },
+    "position": {
+      "type": "string"
+    },
+    "assigned_member_id": {
+      "type": "string"
+    },
+    "assigned_member_name": {
+      "type": "string"
+    },
+    "requested_by": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "suggested_member_id": {
+      "type": "string"
+    },
+    "suggested_member_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "approved",
+        "declined"
+      ],
+      "default": "open"
+    },
+    "resolution_note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "assignment_id"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "name": "Service",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "service_date": {
+      "type": "string",
+      "description": "Date in YYYY-MM-DD format"
+    },
+    "start_time": {
+      "type": "string",
+      "description": "24 hour time, HH:mm"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "24 hour time, HH:mm"
+    },
+    "service_type": {
+      "type": "string",
+      "enum": [
+        "sunday_morning",
+        "sunday_evening",
+        "midweek",
+        "rehearsal",
+        "special_event"
+      ],
+      "default": "sunday_morning"
+    },
+    "location": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "confirmed",
+        "completed"
+      ],
+      "default": "draft"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "service_date",
+    "start_time",
+    "end_time"
+  ]
+}
