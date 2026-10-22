@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { formatDateLabel, formatTimeRange, nextSundayISO } from '@/lib/format';
 import { SERVICE_TYPE_LABELS } from '@/lib/ministry';
 import { Badge } from '@/components/ui/badge';
@@ -20,10 +20,10 @@ export default function Availability() {
 
   const load = async (day) => {
     const [memberRows, recordRows, serviceRows, blackoutRows] = await Promise.all([
-      base44.entities.TeamMember.filter({ is_active: true }, { sort: 'full_name', limit: 300 }),
-      base44.entities.Availability.filter({ date: day }, { limit: 300 }),
-      base44.entities.Service.filter({ service_date: day }, { sort: 'start_time', limit: 20 }),
-      base44.entities.Availability.filter(
+      api.entities.TeamMember.filter({ is_active: true }, { sort: 'full_name', limit: 300 }),
+      api.entities.Availability.filter({ date: day }, { limit: 300 }),
+      api.entities.Service.filter({ service_date: day }, { sort: 'start_time', limit: 20 }),
+      api.entities.Availability.filter(
         { availability: 'unavailable', date: { $gte: nextSundayISO() } },
         { sort: 'date', limit: 100 }
       ),
@@ -45,9 +45,9 @@ export default function Availability() {
   const setAvailability = async (member, availability) => {
     const existing = recordFor(member.id);
     if (existing) {
-      await base44.entities.Availability.update(existing.id, { availability });
+      await api.entities.Availability.update(existing.id, { availability });
     } else {
-      await base44.entities.Availability.create({
+      await api.entities.Availability.create({
         member_id: member.id,
         member_name: member.full_name,
         date,
@@ -60,7 +60,7 @@ export default function Availability() {
   const saveNote = async (member, note) => {
     const existing = recordFor(member.id);
     if (!existing) return;
-    await base44.entities.Availability.update(existing.id, { note });
+    await api.entities.Availability.update(existing.id, { note });
     load(date);
   };
 

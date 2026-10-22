@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Dialog,
@@ -42,7 +42,7 @@ export default function SwapRequestDialog({ open, onOpenChange, service, assignm
     if (!assignment) return;
     setSaving(true);
     const suggestion = members.find((m) => m.id === suggested);
-    await base44.entities.SwapRequest.create({
+    await api.entities.SwapRequest.create({
       assignment_id: assignment.id,
       service_id: assignment.service_id,
       service_title: assignment.service_title,

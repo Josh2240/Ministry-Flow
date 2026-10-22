@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import SongFormDialog from '@/components/planner/SongFormDialog';
 import ConfirmDelete from '@/components/planner/ConfirmDelete';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ export default function Songs() {
     const query = term
       ? { $or: [{ title: { $regex: term, $options: 'i' } }, { artist: { $regex: term, $options: 'i' } }] }
       : {};
-    const rows = await base44.entities.Song.filter(query, { sort: 'title', limit: 300 });
+    const rows = await api.entities.Song.filter(query, { sort: 'title', limit: 300 });
     setSongs(rows.items || []);
     setLoading(false);
   };
@@ -33,7 +33,7 @@ export default function Songs() {
 
   const confirmRemove = async () => {
     if (!deleteTarget) return;
-    await base44.entities.Song.delete(deleteTarget.id);
+    await api.entities.Song.delete(deleteTarget.id);
     setDeleteTarget(null);
     load(search.trim());
   };

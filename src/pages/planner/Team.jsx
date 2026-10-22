@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { todayISO } from '@/lib/format';
 import { MEMBER_ROLE_LABELS } from '@/lib/ministry';
 import MemberFormDialog from '@/components/planner/MemberFormDialog';
@@ -25,12 +25,12 @@ export default function Team() {
     const today = todayISO();
     const query = term ? { full_name: { $regex: term, $options: 'i' } } : {};
     const [list, tally, blackoutRows] = await Promise.all([
-      base44.entities.TeamMember.filter(query, { sort: 'full_name', limit: 200 }),
-      base44.entities.Assignment.aggregate({
+      api.entities.TeamMember.filter(query, { sort: 'full_name', limit: 200 }),
+      api.entities.Assignment.aggregate({
         query: { service_date: { $gte: today } },
         groupBy: 'member_id',
       }),
-      base44.entities.Availability.filter(
+      api.entities.Availability.filter(
         { availability: 'unavailable', date: { $gte: today } },
         { sort: 'date', limit: 200 }
       ),
@@ -58,13 +58,13 @@ export default function Team() {
   }, [search]);
 
   const toggleActive = async (member) => {
-    await base44.entities.TeamMember.update(member.id, { is_active: !member.is_active });
+    await api.entities.TeamMember.update(member.id, { is_active: !member.is_active });
     load(search.trim());
   };
 
   const confirmRemove = async () => {
     if (!deleteTarget) return;
-    await base44.entities.TeamMember.delete(deleteTarget.id);
+    await api.entities.TeamMember.delete(deleteTarget.id);
     setDeleteTarget(null);
     load(search.trim());
   };

@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { dayLabel, formatTimeRange } from '@/lib/format';
 import {
-  ASSIGNMENT_STATUS_LABELS,
   SERVICE_STATUS_LABELS,
   SERVICE_TYPE_LABELS,
   STATUS_BADGE,
@@ -40,13 +39,13 @@ export default function ServiceDetail() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = async () => {
-    const svc = await base44.entities.Service.get(serviceId);
+    const svc = await api.entities.Service.get(serviceId);
     const [rosterRows, songRows, memberRows, setlistRows, swapRows, conflictMap] = await Promise.all([
-      base44.entities.Assignment.filter({ service_id: serviceId }, { sort: 'member_name', limit: 100 }),
-      base44.entities.Song.list({ sort: 'title', limit: 300 }),
-      base44.entities.TeamMember.filter({ is_active: true }, { sort: 'full_name', limit: 300 }),
-      base44.entities.Setlist.filter({ service_id: serviceId }, { limit: 1 }),
-      base44.entities.SwapRequest.filter({ service_id: serviceId }, { sort: '-created_date', limit: 20 }),
+      api.entities.Assignment.filter({ service_id: serviceId }, { sort: 'member_name', limit: 100 }),
+      api.entities.Song.list({ sort: 'title', limit: 300 }),
+      api.entities.TeamMember.filter({ is_active: true }, { sort: 'full_name', limit: 300 }),
+      api.entities.Setlist.filter({ service_id: serviceId }, { limit: 1 }),
+      api.entities.SwapRequest.filter({ service_id: serviceId }, { sort: '-created_date', limit: 20 }),
       scanServiceConflicts({ serviceId, serviceDate: svc.service_date }),
     ]);
     setService(svc);
@@ -82,13 +81,13 @@ export default function ServiceDetail() {
   );
 
   const setStatus = async (row, status) => {
-    await base44.entities.Assignment.update(row.id, { status });
+    await api.entities.Assignment.update(row.id, { status });
     load();
   };
 
   const confirmRemove = async () => {
     if (!deleteTarget) return;
-    await base44.entities.Assignment.delete(deleteTarget.id);
+    await api.entities.Assignment.delete(deleteTarget.id);
     setDeleteTarget(null);
     load();
   };

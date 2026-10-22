@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,7 @@ export default function SetlistEditor({ service, setlist, songs = [], onChanged 
 
   const createSetlist = async () => {
     setBusy(true);
-    await base44.entities.Setlist.create({
+    await api.entities.Setlist.create({
       title: `${service.title} Set`,
       service_id: service.id,
       service_title: service.title,
@@ -46,7 +46,7 @@ export default function SetlistEditor({ service, setlist, songs = [], onChanged 
   };
 
   const persist = async (nextItems, extra = {}) => {
-    await base44.entities.Setlist.update(setlist.id, { items: nextItems, ...extra });
+    await api.entities.Setlist.update(setlist.id, { items: nextItems, ...extra });
     onChanged?.();
   };
 
@@ -116,7 +116,7 @@ export default function SetlistEditor({ service, setlist, songs = [], onChanged 
               id="published"
               checked={!!setlist.is_published}
               onCheckedChange={async (value) => {
-                await base44.entities.Setlist.update(setlist.id, { is_published: value });
+                await api.entities.Setlist.update(setlist.id, { is_published: value });
                 onChanged?.();
               }}
             />

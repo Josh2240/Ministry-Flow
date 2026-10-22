@@ -4,13 +4,16 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "base44 dev",
+    "start": "vite",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:migrate": "node scripts/migrate.js",
+    "create-admin": "node scripts/create-admin.js",
+    "user:create": "node scripts/create-user.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
@@ -45,11 +48,13 @@
     "@stripe/react-stripe-js": "^3.0.0",
     "@stripe/stripe-js": "^5.2.0",
     "@tanstack/react-query": "^5.84.1",
+    "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "dotenv": "^18.0.8",
     "embla-carousel-react": "^8.5.2",
     "framer-motion": "^11.16.4",
     "html2canvas": "^1.4.1",
@@ -60,6 +65,8 @@
     "lucide-react": "^0.475.0",
     "moment": "^2.31.0",
     "next-themes": "^0.4.4",
+    "nodemailer": "^10.2.0",
+    "pg": "^8.23.1",
     "react": "^18.2.0",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.2.0",
@@ -67,7 +74,6 @@
     "react-hot-toast": "^2.6.0",
     "react-leaflet": "^4.2.1",
     "react-markdown": "^9.0.1",
-    "react-quill-new": "^3.8.3",
     "react-resizable-panels": "^2.1.7",
     "react-router-dom": "^6.28.0",
     "recharts": "^2.15.4",
@@ -89,9 +95,11 @@
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^15.14.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "vite": "^5.4.10"
+    "typescript": "^5.9.3",
+    "vite": "^6.4.5"
   }
 }

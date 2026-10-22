@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { useAuth } from '@/lib/AuthContext';
 import { dayLabel, formatTimeRange, todayISO } from '@/lib/format';
 import { ASSIGNMENT_STATUS_LABELS, STATUS_BADGE, TEAM_LABELS } from '@/lib/ministry';
@@ -23,16 +23,16 @@ export default function Dashboard() {
       const today = todayISO();
       const [members, services, openSwaps, newSignups, upcoming, swapList, signupList] =
         await Promise.all([
-          base44.entities.TeamMember.count({ is_active: true }),
-          base44.entities.Service.count({ service_date: { $gte: today } }),
-          base44.entities.SwapRequest.count({ status: 'open' }),
-          base44.entities.SignupInterest.count({ status: 'new' }),
-          base44.entities.Service.filter(
+          api.entities.TeamMember.count({ is_active: true }),
+          api.entities.Service.count({ service_date: { $gte: today } }),
+          api.entities.SwapRequest.count({ status: 'open' }),
+          api.entities.SignupInterest.count({ status: 'new' }),
+          api.entities.Service.filter(
             { service_date: { $gte: today } },
             { sort: 'service_date', limit: 3 }
           ),
-          base44.entities.SwapRequest.filter({ status: 'open' }, { sort: '-created_date', limit: 4 }),
-          base44.entities.SignupInterest.filter(
+          api.entities.SwapRequest.filter({ status: 'open' }, { sort: '-created_date', limit: 4 }),
+          api.entities.SignupInterest.filter(
             { status: 'new' },
             { sort: '-created_date', limit: 4 }
           ),
@@ -43,7 +43,7 @@ export default function Dashboard() {
       let conflicts = {};
       if (nextService) {
         const [rosterRows, conflictMap] = await Promise.all([
-          base44.entities.Assignment.filter(
+          api.entities.Assignment.filter(
             { service_id: nextService.id },
             { sort: 'member_name', limit: 100 }
           ),

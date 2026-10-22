@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { churchInfo } from '@/lib/churchInfo';
 import { todayISO } from '@/lib/format';
 import { Button } from '@/components/ui/button';
@@ -21,12 +21,12 @@ export default function Home() {
       const today = todayISO();
       try {
         const [timeRows, serviceRows, setlistRows] = await Promise.all([
-          base44.entities.ServiceTime.filter({ is_active: true }, { sort: 'time', limit: 20 }),
-          base44.entities.Service.filter(
+          api.entities.ServiceTime.filter({ is_active: true }, { sort: 'time', limit: 20 }),
+          api.entities.Service.filter(
             { service_date: { $gte: today } },
             { sort: 'service_date', limit: 4 }
           ),
-          base44.entities.Setlist.filter(
+          api.entities.Setlist.filter(
             { is_published: true, service_date: { $gte: today } },
             { sort: 'service_date', limit: 3 }
           ),
@@ -34,7 +34,7 @@ export default function Home() {
         const upcoming = serviceRows.items || [];
         let roster = [];
         if (upcoming.length) {
-          const rows = await base44.entities.Assignment.filter(
+          const rows = await api.entities.Assignment.filter(
             { service_id: { $in: upcoming.map((s) => s.id) } },
             { limit: 200 }
           );

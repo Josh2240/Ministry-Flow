@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import {
   Dialog,
   DialogContent,
@@ -39,7 +39,7 @@ export default function AddFromSignupDialog({ open, onOpenChange, signup, onAdde
   const add = async () => {
     if (!signup) return;
     setSaving(true);
-    await base44.entities.TeamMember.create({
+    await api.entities.TeamMember.create({
       full_name: signup.full_name,
       email: signup.email || '',
       phone: signup.phone || '',
@@ -49,7 +49,7 @@ export default function AddFromSignupDialog({ open, onOpenChange, signup, onAdde
       is_active: true,
       notes: [signup.experience, signup.message].filter(Boolean).join(' — '),
     });
-    await base44.entities.SignupInterest.update(signup.id, { status: 'joined' });
+    await api.entities.SignupInterest.update(signup.id, { status: 'joined' });
     setSaving(false);
     toast({ title: 'Added to the team' });
     onOpenChange(false);

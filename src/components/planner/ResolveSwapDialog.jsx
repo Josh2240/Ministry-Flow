@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import {
   Dialog,
   DialogContent,
@@ -70,7 +70,7 @@ export default function ResolveSwapDialog({ open, onOpenChange, request, mode, m
     if (mode === 'approve' && replacement !== 'none') {
       const member = members.find((m) => m.id === replacement);
       try {
-        await base44.entities.Assignment.update(request.assignment_id, {
+        await api.entities.Assignment.update(request.assignment_id, {
           member_id: replacement,
           member_name: member?.full_name || '',
           status: 'confirmed',
@@ -80,7 +80,7 @@ export default function ResolveSwapDialog({ open, onOpenChange, request, mode, m
       }
     }
 
-    await base44.entities.SwapRequest.update(request.id, {
+    await api.entities.SwapRequest.update(request.id, {
       status: mode === 'approve' ? 'approved' : 'declined',
       resolution_note: note.trim(),
       suggested_member_id: mode === 'approve' ? replacement : request.suggested_member_id || '',

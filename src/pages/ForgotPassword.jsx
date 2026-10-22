@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,17 +11,19 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
     try {
-      await base44.auth.resetPasswordRequest(email);
-    } catch {
-      // Always show success regardless
+      await api.auth.resetPasswordRequest(email);
+      setSent(true);
+    } catch (requestError) {
+      setError(requestError.message || "Unable to send a password reset email.");
     } finally {
       setLoading(false);
-      setSent(true);
     }
   };
 
@@ -42,6 +44,11 @@ export default function ForgotPassword() {
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <div className="relative">

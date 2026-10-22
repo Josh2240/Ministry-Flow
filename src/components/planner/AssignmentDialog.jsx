@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import {
   Dialog,
   DialogContent,
@@ -117,9 +117,9 @@ export default function AssignmentDialog({
       notes: notes.trim(),
     };
     if (assignment?.id) {
-      await base44.entities.Assignment.update(assignment.id, payload);
+      await api.entities.Assignment.update(assignment.id, payload);
     } else {
-      await base44.entities.Assignment.create(payload);
+      await api.entities.Assignment.create(payload);
     }
     setSaving(false);
     toast({ title: assignment?.id ? 'Assignment updated' : 'Added to the roster' });

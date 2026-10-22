@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,13 @@ import { safeReturnTo } from "@/lib/authReturnTo";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => {
+    const code = new URLSearchParams(window.location.search).get("error");
+    if (code === "account_not_invited") return "Your Google account has not been invited yet.";
+    if (code === "google_failed") return "Google sign-in failed. Please try again.";
+    if (code === "google_not_configured") return "Google sign-in is not configured yet.";
+    return "";
+  });
   const [loading, setLoading] = useState(false);
   // Post-login destination (e.g. the MCP OAuth consent page sends users here
   // with returnTo so the grant flow can resume). Same-origin paths only.
@@ -23,7 +29,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await base44.auth.loginViaEmailPassword(email, password);
+      await api.auth.loginViaEmailPassword(email, password);
       window.location.href = returnTo;
     } catch (err) {
       setError(err.message || "Invalid email or password");
@@ -33,7 +39,7 @@ export default function Login() {
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", returnTo);
+    api.auth.loginWithProvider("google", returnTo);
   };
 
   return (
@@ -42,15 +48,7 @@ export default function Login() {
       title="Welcome back"
       subtitle="Log in to your account"
       footer={
-        <>
-          Don't have an account?{" "}
-          <Link
-            to={"/register" + (returnTo !== "/" ? "?returnTo=" + encodeURIComponent(returnTo) : "")}
-            className="text-primary font-medium hover:underline"
-          >
-            Create one
-          </Link>
-        </>
+        <>Accounts are created by an administrator.</>
       }
     >
       <Button

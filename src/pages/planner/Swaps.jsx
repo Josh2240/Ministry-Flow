@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { dayLabel } from '@/lib/format';
 import { STATUS_BADGE, SWAP_STATUS_LABELS } from '@/lib/ministry';
 import ResolveSwapDialog from '@/components/planner/ResolveSwapDialog';
@@ -24,8 +24,8 @@ export default function Swaps() {
         ? { status: 'open' }
         : { status: { $in: ['approved', 'declined'] } };
     const [rows, memberRows] = await Promise.all([
-      base44.entities.SwapRequest.filter(query, { sort: '-created_date', limit: 60 }),
-      base44.entities.TeamMember.filter({ is_active: true }, { sort: 'full_name', limit: 300 }),
+      api.entities.SwapRequest.filter(query, { sort: '-created_date', limit: 60 }),
+      api.entities.TeamMember.filter({ is_active: true }, { sort: 'full_name', limit: 300 }),
     ]);
     setRequests(rows.items || []);
     setMembers(memberRows.items || []);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import {
   Dialog,
   DialogContent,
@@ -63,9 +63,9 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSaved }
       notes: form.notes?.trim() || '',
     };
     if (member?.id) {
-      await base44.entities.TeamMember.update(member.id, payload);
+      await api.entities.TeamMember.update(member.id, payload);
     } else {
-      await base44.entities.TeamMember.create(payload);
+      await api.entities.TeamMember.create(payload);
     }
     setSaving(false);
     toast({ title: member?.id ? 'Team member updated' : 'Team member added' });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { formatDateLabel, formatTimeRange, todayISO } from '@/lib/format';
 import { SERVICE_TYPE_LABELS, SERVICE_STATUS_LABELS, STATUS_BADGE } from '@/lib/ministry';
 import ServiceFormDialog from '@/components/planner/ServiceFormDialog';
@@ -25,11 +25,11 @@ export default function Schedule() {
         ? { service_date: { $gte: today } }
         : { service_date: { $lt: today } };
     const [list, tally] = await Promise.all([
-      base44.entities.Service.filter(query, {
+      api.entities.Service.filter(query, {
         sort: currentView === 'upcoming' ? 'service_date' : '-service_date',
         limit: 60,
       }),
-      base44.entities.Assignment.aggregate({ query, groupBy: 'service_id' }),
+      api.entities.Assignment.aggregate({ query, groupBy: 'service_id' }),
     ]);
     const map = {};
     (tally.rows || []).forEach((row) => {

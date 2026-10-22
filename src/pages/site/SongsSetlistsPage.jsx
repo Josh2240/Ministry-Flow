@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { todayISO } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import PublicSetlistCard from '@/components/site/PublicSetlistCard';
@@ -14,7 +14,7 @@ export default function SongsSetlistsPage() {
     let active = true;
     (async () => {
       try {
-        const rows = await base44.entities.Setlist.filter(
+        const rows = await api.entities.Setlist.filter(
           { is_published: true, service_date: { $gte: todayISO() } },
           { sort: 'service_date', limit: 12 }
         );
@@ -33,7 +33,7 @@ export default function SongsSetlistsPage() {
     const query = search.trim() ? { title: { $regex: search.trim(), $options: 'i' } } : {};
     const timer = setTimeout(async () => {
       try {
-        const rows = await base44.entities.Song.filter(query, { sort: 'title', limit: 200 });
+        const rows = await api.entities.Song.filter(query, { sort: 'title', limit: 200 });
         if (active) setSongs(rows.items || []);
       } catch (error) {
         if (active) setSongs([]);

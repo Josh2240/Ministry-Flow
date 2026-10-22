@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import {
   Dialog,
   DialogContent,
@@ -60,9 +60,9 @@ export default function SongFormDialog({ open, onOpenChange, song, onSaved }) {
       notes: form.notes?.trim() || '',
     };
     if (song?.id) {
-      await base44.entities.Song.update(song.id, payload);
+      await api.entities.Song.update(song.id, payload);
     } else {
-      await base44.entities.Song.create(payload);
+      await api.entities.Song.create(payload);
     }
     setSaving(false);
     toast({ title: song?.id ? 'Song updated' : 'Song added' });

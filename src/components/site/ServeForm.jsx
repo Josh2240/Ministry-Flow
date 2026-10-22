@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,7 @@ export default function ServeForm() {
     }
     setSaving(true);
     try {
-      await base44.entities.SignupInterest.create({
+      await api.entities.SignupInterest.create({
         full_name: form.full_name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),

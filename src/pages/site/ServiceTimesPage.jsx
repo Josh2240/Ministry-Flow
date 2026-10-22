@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { churchInfo } from '@/lib/churchInfo';
 import { todayISO } from '@/lib/format';
 import ServiceTimesList from '@/components/site/ServiceTimesList';
@@ -15,8 +15,8 @@ export default function ServiceTimesPage() {
     (async () => {
       try {
         const [timeRows, serviceRows] = await Promise.all([
-          base44.entities.ServiceTime.filter({ is_active: true }, { sort: 'time', limit: 20 }),
-          base44.entities.Service.filter(
+          api.entities.ServiceTime.filter({ is_active: true }, { sort: 'time', limit: 20 }),
+          api.entities.Service.filter(
             { service_date: { $gte: todayISO() } },
             { sort: 'service_date', limit: 6 }
           ),
@@ -24,7 +24,7 @@ export default function ServiceTimesPage() {
         const upcoming = serviceRows.items || [];
         let roster = [];
         if (upcoming.length) {
-          const rows = await base44.entities.Assignment.filter(
+          const rows = await api.entities.Assignment.filter(
             { service_id: { $in: upcoming.map((s) => s.id) } },
             { limit: 300 }
           );

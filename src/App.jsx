@@ -7,7 +7,6 @@ import SiteLayout from './components/site/SiteLayout';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import OAuthConsent from './pages/OAuthConsent';
 import PlannerDashboard from './pages/planner/Dashboard';
 import PlannerSchedule from './pages/planner/Schedule';
 import PlannerTeam from './pages/planner/Team';
@@ -32,7 +31,6 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/oauth/consent" element={<OAuthConsent />} />
           
           <Route element={<ProtectedRoute />}>
             <Route path="/planner" element={<PlannerLayout />}>

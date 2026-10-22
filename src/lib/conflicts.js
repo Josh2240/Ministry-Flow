@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { formatTime } from '@/lib/format';
 
 export function shiftsOverlap(aStart, aEnd, bStart, bEnd) {
@@ -30,17 +30,19 @@ export async function checkAssignmentConflicts({
   excludeAssignmentId,
 }) {
   if (!memberId || !serviceDate) return [];
-  const [bookings, blackouts] = await Promise.all([
-    base44.entities.Assignment.filter({
+  const [bookingResult, blackoutResult] = await Promise.all([
+    api.entities.Assignment.filter({
       member_id: memberId,
       service_date: serviceDate,
     }),
-    base44.entities.Availability.filter({
+    api.entities.Availability.filter({
       member_id: memberId,
       date: serviceDate,
       availability: 'unavailable',
     }),
   ]);
+  const bookings = bookingResult.items || [];
+  const blackouts = blackoutResult.items || [];
 
   const issues = [];
   (bookings || [])
@@ -72,8 +74,8 @@ export async function checkAssignmentConflicts({
 export async function scanServiceConflicts({ serviceId, serviceDate }) {
   if (!serviceId || !serviceDate) return {};
   const [dayAssignments, blackouts] = await Promise.all([
-    base44.entities.Assignment.filter({ service_date: serviceDate }, { limit: 400 }),
-    base44.entities.Availability.filter(
+    api.entities.Assignment.filter({ service_date: serviceDate }, { limit: 400 }),
+    api.entities.Availability.filter(
       { date: serviceDate, availability: 'unavailable' },
       { limit: 400 }
     ),

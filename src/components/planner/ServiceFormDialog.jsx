@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import {
   Dialog,
   DialogContent,
@@ -63,9 +63,9 @@ export default function ServiceFormDialog({ open, onOpenChange, service, onSaved
       notes: form.notes?.trim() || '',
     };
     if (service?.id) {
-      await base44.entities.Service.update(service.id, payload);
+      await api.entities.Service.update(service.id, payload);
     } else {
-      await base44.entities.Service.create(payload);
+      await api.entities.Service.create(payload);
     }
     setSaving(false);
     toast({ title: service?.id ? 'Service updated' : 'Service added' });

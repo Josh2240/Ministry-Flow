@@ -1,63 +1,65 @@
-# Base44 Project
+# Ministry Flow
 
-Use this repository to run and edit the app locally, then publish changes back through Base44.
+Ministry Flow is a standalone React application with its own PostgreSQL-backed API. It deploys to Vercel and does not use a Base44 runtime or SDK.
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+## Requirements
 
-## Prerequisites
+- Node.js 20 or newer
+- npm
+- A PostgreSQL database (a pooled Neon connection is suitable for Vercel)
 
-1. Clone the repository using the project's Git URL.
-2. Navigate to the project directory.
-3. Install dependencies: `npm install`.
-4. Install the Base44 CLI: `npm install -g base44@latest`.
-5. Install [Deno](https://docs.deno.com/runtime/getting_started/installation/) — the local Base44 backend runs on it.
+## Configure the database
 
-Run `base44 --help` (or see the [CLI reference](https://docs.base44.com/developers/references/cli/commands/introduction)) for the full command surface.
+Create a PostgreSQL database and a restricted runtime role named `ministry_flow_app`. As the database owner, run `CREATE ROLE ministry_flow_app LOGIN PASSWORD '<a-long-unique-password>';` and grant it `CONNECT` on the database. Set `DATABASE_URL` to the runtime role's pooled connection string and `DATABASE_ADMIN_URL` to a privileged connection used only for migrations and account setup. After applying the schema, run `db/privileges.sql` as the database owner to grant the runtime role its required table access. Copy `.env.example` to `.env.local` for local development, and keep that file private.
 
-## Run Locally
-
-Three commands, from the project root:
+Apply the schema:
 
 ```bash
-base44 login   # one-time per machine
-base44 link    # one-time per clone
-npm start      # local backend + frontend together (runs base44 dev)
+npm run db:migrate
 ```
 
-Open the frontend URL that `base44 dev` prints (typically `http://localhost:5173`).
-
-Notes:
-
-- **Every fresh clone needs `base44 link`.** It writes `base44/.app.jsonc` (the app-id pointer), which is deliberately gitignored. Your app id is in the Builder URL (`app.base44.com/apps/<id>/...`); `base44 link --help` shows the non-interactive flags.
-- **`base44 dev` runs the frontend for you** (via `site.serveCommand` in this repo's `base44/config.jsonc`) — never run `npm run dev` yourself: alone it serves a UI with no backend behind it (`[base44] Proxy not enabled`, every `/api` call fails), and alongside `base44 dev` the second Vite silently takes the next port and you end up looking at the wrong one.
-- **The app must be published at least once for the UI to load under `base44 dev`.** The frontend boots by fetching app settings from the hosted app; before the first publish that fails and every page redirects to login. The local API works regardless.
-- Entities, functions, and auth run locally — entity data is **in-memory only**, wiped when `base44 dev` restarts. Everything else (Core integrations, OAuth login) is forwarded to your deployed app. Full breakdown: [Local development overview](https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview).
-
-## Frontend Only, Hosted Backend
-
-To work on just the frontend against your app's live hosted backend:
+Create the first administrator. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are read from your environment; use a password of at least 12 characters. This command refuses to create a second initial administrator.
 
 ```bash
-base44 dev --remote
+npm run create-admin
 ```
 
-⚠️ In this mode writes go to your app's **production data** — plain `base44 dev` keeps everything local.
+To create additional accounts, use `npm run user:create -- <email> [user|admin]`. The command generates a temporary password and prints it once; deliver it securely. Accounts are not publicly self-registered.
 
-## Publish Your Changes
+## Configure sign-in and email
 
-After pushing your changes to git, open the Base44 dashboard and publish the app:
+Set `DATABASE_URL`, `APP_URL`, and the values below in Vercel Project Settings → Environment Variables. Keep the privileged `DATABASE_ADMIN_URL` out of Vercel; use it only for local database setup commands.
+
+- `DATABASE_URL`: pooled PostgreSQL URL for the restricted `ministry_flow_app` runtime role
+
+- `APP_URL`: canonical application origin, for example `https://your-domain.vercel.app`
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: Google OAuth client credentials. Add `${APP_URL}/api/auth/google/callback` as an authorized redirect URI in Google Cloud.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM`: credentials for password reset email delivery.
+
+Email/password login works without Google configured. Google sign-in and password recovery report a configuration error until their credentials are added.
+
+## Run locally
 
 ```bash
-base44 dashboard open
+npm start
 ```
 
-This repo syncs to Base44 through git, so publish from the dashboard rather than `base44 deploy` — a CLI deploy ships your local tree directly, bypassing the sync, and the deployed state silently diverges from the repo.
+`npm start` and `npm run dev` run Vite with the project API middleware, serving the frontend and API together. Configure `.env.local` and apply the database schema before opening the app.
 
-## Docs & Support
+## Deploy to Vercel
 
-GitHub integration: [https://docs.base44.com/developers/app-code/local-development/github](https://docs.base44.com/developers/app-code/local-development/github)
+Import this repository in Vercel, add the environment variables above, and deploy. `vercel.json` configures the Vite build output and SPA routes; the `api/` directory provides the serverless API. Apply `db/schema.sql` to the production database with `npm run db:migrate` using the production `DATABASE_ADMIN_URL` before using the deployed app.
 
-Local development: [https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview](https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview)
+## Checks
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
-# Ministry-Flow
+```bash
+npm run build
+npm run lint
+npm run typecheck
+```
+
+The current typecheck reports existing JSX component prop typing errors; the production build and lint checks pass.
+
+## Data migration
+
+The previous frontend client in this repository was a local mock, not a live data connection. The new PostgreSQL database starts empty. Export any records from the former hosted application separately before migrating them into the new database.

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { formatDateTime } from '@/lib/format';
 import { SIGNUP_STATUS_LABELS, STATUS_BADGE, TEAM_LABELS } from '@/lib/ministry';
 import AddFromSignupDialog from '@/components/planner/AddFromSignupDialog';
@@ -20,7 +20,7 @@ export default function Signups() {
 
   const load = async (currentView) => {
     const query = currentView === 'new' ? { status: 'new' } : {};
-    const rows = await base44.entities.SignupInterest.filter(query, {
+    const rows = await api.entities.SignupInterest.filter(query, {
       sort: '-created_date',
       limit: 80,
     });
@@ -34,13 +34,13 @@ export default function Signups() {
   }, [view]);
 
   const markStatus = async (signup, status) => {
-    await base44.entities.SignupInterest.update(signup.id, { status });
+    await api.entities.SignupInterest.update(signup.id, { status });
     load(view);
   };
 
   const confirmRemove = async () => {
     if (!deleteTarget) return;
-    await base44.entities.SignupInterest.delete(deleteTarget.id);
+    await api.entities.SignupInterest.delete(deleteTarget.id);
     setDeleteTarget(null);
     load(view);
   };
