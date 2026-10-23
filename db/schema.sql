@@ -41,6 +41,19 @@ CREATE TABLE IF NOT EXISTS auth_rate_limits (
   window_started_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS auth_pending_registrations (
+  email text PRIMARY KEY,
+  password_hash text NOT NULL,
+  code_hash text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  attempts integer NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 5),
+  last_sent_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS auth_pending_registrations_expiry_idx
+  ON auth_pending_registrations (expires_at);
+
 CREATE TABLE IF NOT EXISTS app_records (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   entity text NOT NULL CHECK (

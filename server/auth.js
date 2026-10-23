@@ -1,7 +1,7 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
-import { query } from './db.js';
+import { getPool, query } from './db.js';
 import { clearCookie, getCookie, safeReturnTo, sendJson, setCookie } from './http.js';
 
 const SESSION_COOKIE = 'ministry_flow_session';
@@ -49,10 +49,10 @@ async function createSession(user, res) {
   setCookie(res, SESSION_COOKIE, token, { maxAge: SESSION_SECONDS });
 }
 
-async function checkLoginRateLimit(email, req) {
+async function checkLoginRateLimit(email, req, scope = 'login') {
   const forwarded = req.headers['x-forwarded-for'];
   const ip = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : 'unknown';
-  const bucket = sha256(`${email}:${ip}`);
+  const bucket = sha256(`${scope}:${email}:${ip}`);
   const result = await query(
     `INSERT INTO auth_rate_limits (bucket, attempts, window_started_at)
      VALUES ($1, 1, now())
@@ -103,6 +103,205 @@ export async function login(req, res, body) {
   return sendJson(res, 200, { user: publicUser(user) });
 }
 
+function normalizeEmail(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function validEmail(email) {
+  return email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function emailDeliveryError() {
+  const required = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM'];
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length) {
+    const error = new Error(`Email delivery is not configured. Missing: ${missing.join(', ')}`);
+    error.status = 503;
+    throw error;
+  }
+}
+
+async function sendRegistrationCode(email, code) {
+  const transport = mailTransport();
+  await transport.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: 'Verify your Ministry Flow account',
+    text: `Your Ministry Flow verification code is ${code}. It expires in 10 minutes.`,
+    html: `<p>Your Ministry Flow verification code is:</p><p style="font-size:24px;font-weight:bold;letter-spacing:6px">${code}</p><p>This code expires in 10 minutes.</p>`,
+  });
+}
+
+export async function register(req, res, body) {
+  const email = normalizeEmail(body.email);
+  const password = typeof body.password === 'string' ? body.password : '';
+  if (!validEmail(email) || password.length < 12 || password.length > 128) {
+    return sendJson(res, 400, {
+      error: 'Enter a valid email and a password between 12 and 128 characters.',
+    });
+  }
+
+  const { attempts } = await checkLoginRateLimit(email, req, 'registration');
+  if (attempts > 5) {
+    return sendJson(res, 429, { error: 'Too many sign-up attempts. Try again in 15 minutes.' });
+  }
+
+  emailDeliveryError();
+  const existingUser = await query('SELECT 1 FROM app_users WHERE lower(email) = $1', [email]);
+  if (existingUser.rowCount) {
+    return sendJson(res, 409, { error: 'An account with this email already exists. Please log in.' });
+  }
+
+  const code = String(randomInt(100000, 1000000));
+  const [passwordHash, codeHash] = await Promise.all([
+    bcrypt.hash(password, 12),
+    bcrypt.hash(code, 12),
+  ]);
+  const pendingResult = await query(
+    `INSERT INTO auth_pending_registrations
+       (email, password_hash, code_hash, expires_at, attempts, last_sent_at)
+     VALUES ($1, $2, $3, now() + interval '10 minutes', 0, now())
+     ON CONFLICT (email) DO UPDATE SET
+       password_hash = EXCLUDED.password_hash,
+       code_hash = EXCLUDED.code_hash,
+       expires_at = EXCLUDED.expires_at,
+       attempts = 0,
+       last_sent_at = now()
+     WHERE auth_pending_registrations.last_sent_at <= now() - interval '60 seconds'
+     RETURNING email`,
+    [email, passwordHash, codeHash]
+  );
+  if (!pendingResult.rowCount) {
+    return sendJson(res, 429, { error: 'A verification code was just sent. Please wait a minute before retrying.' });
+  }
+
+  try {
+    await sendRegistrationCode(email, code);
+  } catch (error) {
+    await query(
+      'DELETE FROM auth_pending_registrations WHERE email = $1 AND code_hash = $2',
+      [email, codeHash]
+    );
+    throw error;
+  }
+  return sendJson(res, 200, { success: true });
+}
+
+export async function resendRegistrationCode(req, res, body) {
+  const email = normalizeEmail(body.email);
+  if (!validEmail(email)) {
+    return sendJson(res, 400, { error: 'Enter a valid email address.' });
+  }
+
+  const { attempts } = await checkLoginRateLimit(email, req, 'registration');
+  if (attempts > 5) {
+    return sendJson(res, 429, { error: 'Too many sign-up attempts. Try again in 15 minutes.' });
+  }
+  emailDeliveryError();
+
+  const userResult = await query('SELECT 1 FROM app_users WHERE lower(email) = $1', [email]);
+  if (userResult.rowCount) return sendJson(res, 200, { success: true });
+
+  const pending = await query(
+    'SELECT 1 FROM auth_pending_registrations WHERE email = $1 AND expires_at > now()',
+    [email]
+  );
+  if (!pending.rowCount) return sendJson(res, 200, { success: true });
+
+  const code = String(randomInt(100000, 1000000));
+  const codeHash = await bcrypt.hash(code, 12);
+  const updated = await query(
+    `UPDATE auth_pending_registrations
+     SET code_hash = $2, expires_at = now() + interval '10 minutes',
+         attempts = 0, last_sent_at = now()
+     WHERE email = $1 AND expires_at > now()
+       AND last_sent_at <= now() - interval '60 seconds'
+     RETURNING email`,
+    [email, codeHash]
+  );
+  if (!updated.rowCount) {
+    return sendJson(res, 429, { error: 'A verification code was just sent. Please wait a minute before retrying.' });
+  }
+
+  try {
+    await sendRegistrationCode(email, code);
+  } catch (error) {
+    await query(
+      `DELETE FROM auth_pending_registrations
+       WHERE email = $1 AND code_hash = $2`,
+      [email, codeHash]
+    );
+    throw error;
+  }
+  return sendJson(res, 200, { success: true });
+}
+
+export async function verifyRegistration(req, res, body) {
+  const email = normalizeEmail(body.email);
+  const code = typeof body.code === 'string' ? body.code.trim() : '';
+  if (!validEmail(email) || !/^\d{6}$/.test(code)) {
+    return sendJson(res, 400, { error: 'Enter a valid email and six-digit verification code.' });
+  }
+
+  const client = await getPool().connect();
+  let inTransaction = false;
+  let user;
+  try {
+    await client.query('BEGIN');
+    inTransaction = true;
+    const pendingResult = await client.query(
+      `SELECT password_hash, code_hash, expires_at, attempts
+       FROM auth_pending_registrations
+       WHERE email = $1
+       FOR UPDATE`,
+      [email]
+    );
+    const pending = pendingResult.rows[0];
+    if (!pending || pending.expires_at <= new Date() || pending.attempts >= 5) {
+      await client.query('ROLLBACK');
+      inTransaction = false;
+      return sendJson(res, 400, { error: 'This verification code is invalid or has expired.' });
+    }
+
+    if (!(await bcrypt.compare(code, pending.code_hash))) {
+      await client.query(
+        'UPDATE auth_pending_registrations SET attempts = attempts + 1 WHERE email = $1',
+        [email]
+      );
+      await client.query('COMMIT');
+      inTransaction = false;
+      return sendJson(res, 400, { error: 'This verification code is invalid or has expired.' });
+    }
+
+    const userResult = await client.query(
+      `INSERT INTO app_users (email, password_hash, role)
+       VALUES ($1, $2, 'user')
+       ON CONFLICT (lower(email)) DO NOTHING
+       RETURNING id, email, role`,
+      [email, pending.password_hash]
+    );
+    if (!userResult.rowCount) {
+      await client.query('DELETE FROM auth_pending_registrations WHERE email = $1', [email]);
+      await client.query('COMMIT');
+      inTransaction = false;
+      return sendJson(res, 409, { error: 'An account with this email already exists. Please log in.' });
+    }
+
+    user = userResult.rows[0];
+    await client.query('DELETE FROM auth_pending_registrations WHERE email = $1', [email]);
+    await client.query('COMMIT');
+    inTransaction = false;
+  } catch (error) {
+    if (inTransaction) await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  await createSession(user, res);
+  return sendJson(res, 200, { user: publicUser(user) });
+}
+
 export async function logout(req, res) {
   const token = getCookie(req, SESSION_COOKIE);
   if (token) await query('DELETE FROM app_sessions WHERE token_hash = $1', [sha256(token)]);
@@ -111,13 +310,7 @@ export async function logout(req, res) {
 }
 
 function mailTransport() {
-  const required = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM'];
-  const missing = required.filter((key) => !process.env[key]);
-  if (missing.length) {
-    const error = new Error(`Email recovery is not configured. Missing: ${missing.join(', ')}`);
-    error.status = 503;
-    throw error;
-  }
+  emailDeliveryError();
   const port = Number(process.env.SMTP_PORT || 587);
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -285,22 +478,49 @@ export async function finishGoogleLogin(req, res, code, state) {
     throw error;
   }
 
-  const userResult = await query(
+  let userResult = await query(
     `SELECT id, email, role, google_sub
      FROM app_users WHERE lower(email) = $1`,
     [profile.email.toLowerCase()]
   );
-  const user = userResult.rows[0];
+  let user = userResult.rows[0];
+  if (!user) {
+    userResult = await query(
+      `INSERT INTO app_users (email, google_sub, role)
+       VALUES ($1, $2, 'user')
+       ON CONFLICT (lower(email)) DO NOTHING
+       RETURNING id, email, role, google_sub`,
+      [profile.email.toLowerCase(), profile.sub]
+    );
+    user = userResult.rows[0];
+    if (!user) {
+      userResult = await query(
+        `SELECT id, email, role, google_sub
+         FROM app_users WHERE lower(email) = $1`,
+        [profile.email.toLowerCase()]
+      );
+      user = userResult.rows[0];
+    }
+  }
   if (!user || (user.google_sub && user.google_sub !== profile.sub)) {
-    const error = new Error('No invited account matches this Google email.');
+    const error = new Error('This Google account cannot be linked to the existing account.');
     error.status = 403;
     throw error;
   }
   if (!user.google_sub) {
-    await query('UPDATE app_users SET google_sub = $1, updated_at = now() WHERE id = $2', [
-      profile.sub,
-      user.id,
-    ]);
+    const linkedUser = await query(
+      `UPDATE app_users
+       SET google_sub = $1, updated_at = now()
+       WHERE id = $2 AND (google_sub IS NULL OR google_sub = $1)
+       RETURNING id, email, role, google_sub`,
+      [profile.sub, user.id]
+    );
+    if (!linkedUser.rowCount) {
+      const error = new Error('This Google account cannot be linked to the existing account.');
+      error.status = 403;
+      throw error;
+    }
+    user = linkedUser.rows[0];
   }
   await createSession(user, res);
   res.statusCode = 302;

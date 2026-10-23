@@ -4,8 +4,11 @@ import {
   finishGoogleLogin,
   login,
   logout,
+  register,
+  resendRegistrationCode,
   requestPasswordReset,
   resetPassword,
+  verifyRegistration,
 } from '../server/auth.js';
 import { handleEntityRequest } from '../server/entities.js';
 import { readJson, sendJson } from '../server/http.js';
@@ -43,7 +46,7 @@ export default async function handler(req, res) {
         } catch (error) {
           console.error('Google sign-in failed:', error);
           res.statusCode = 302;
-          res.setHeader('Location', `/login?error=${encodeURIComponent(error.status === 403 ? 'account_not_invited' : 'google_failed')}`);
+          res.setHeader('Location', `/login?error=${encodeURIComponent(error.status === 403 ? 'google_account_conflict' : 'google_failed')}`);
           return res.end();
         }
       }
@@ -56,6 +59,13 @@ export default async function handler(req, res) {
       }
       const body = await readJson(req);
       if (action === 'login') return await login(req, res, body);
+      if (action === 'register' && segments.length === 2) return await register(req, res, body);
+      if (action === 'register' && segments[2] === 'verify') {
+        return await verifyRegistration(req, res, body);
+      }
+      if (action === 'register' && segments[2] === 'resend') {
+        return await resendRegistrationCode(req, res, body);
+      }
       if (action === 'logout') return await logout(req, res);
       if (action === 'forgot-password') {
         return sendJson(res, 200, await requestPasswordReset(body));

@@ -10,7 +10,7 @@ Ministry Flow is a standalone React application with its own PostgreSQL-backed A
 
 ## Configure the database
 
-Create a PostgreSQL database and a restricted runtime role named `ministry_flow_app`. As the database owner, run `CREATE ROLE ministry_flow_app LOGIN PASSWORD '<a-long-unique-password>';` and grant it `CONNECT` on the database. Set `DATABASE_URL` to the runtime role's pooled connection string and `DATABASE_ADMIN_URL` to a privileged connection used only for migrations and account setup. After applying the schema, run `db/privileges.sql` as the database owner to grant the runtime role its required table access. Copy `.env.example` to `.env.local` for local development, and keep that file private.
+Create a PostgreSQL database and a restricted runtime role named `ministry_flow_app`. As the database owner, run `CREATE ROLE ministry_flow_app LOGIN PASSWORD '<a-long-unique-password>';` and grant it `CONNECT` on the database. Set `DATABASE_URL` to the runtime role's pooled connection string and `DATABASE_ADMIN_URL` to a privileged owner connection used only for migrations and account setup. Copy `.env.example` to `.env.local`, replace all example values with your real local values, and keep that file private. Do not put `DATABASE_ADMIN_URL` in Vercel.
 
 Apply the schema:
 
@@ -18,13 +18,15 @@ Apply the schema:
 npm run db:migrate
 ```
 
-Create the first administrator. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are read from your environment; use a password of at least 12 characters. This command refuses to create a second initial administrator.
+Create the first administrator before making the app available for sign-up. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are read from your environment; use a password of at least 12 characters. This command refuses to create a second administrator and can promote the configured email if it already registered.
 
 ```bash
 npm run create-admin
 ```
 
-To create additional accounts, use `npm run user:create -- <email> [user|admin]`. The command generates a temporary password and prints it once; deliver it securely. Accounts are not publicly self-registered.
+Users can register at `/register` with an email address and password, then verify their email with a one-time code. Google sign-in also creates a regular user account for verified Google email addresses. Configure SMTP before enabling registration; administrator accounts should be created with `npm run create-admin` or `npm run user:create -- <email> admin`.
+
+To create additional accounts manually, use `npm run user:create -- <email> [user|admin]`. The command generates a temporary password and prints it once; deliver it securely.
 
 ## Configure sign-in and email
 
@@ -34,9 +36,9 @@ Set `DATABASE_URL`, `APP_URL`, and the values below in Vercel Project Settings â
 
 - `APP_URL`: canonical application origin, for example `https://your-domain.vercel.app`
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: Google OAuth client credentials. Add `${APP_URL}/api/auth/google/callback` as an authorized redirect URI in Google Cloud.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM`: credentials for password reset email delivery.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM`: credentials for registration verification and password reset emails.
 
-Email/password login works without Google configured. Google sign-in and password recovery report a configuration error until their credentials are added.
+Email/password login works without Google configured. Public email sign-up and password recovery require SMTP configuration. Google sign-in and sign-up report a configuration error until Google credentials are added.
 
 ## Run locally
 
@@ -44,11 +46,11 @@ Email/password login works without Google configured. Google sign-in and passwor
 npm start
 ```
 
-`npm start` and `npm run dev` run Vite with the project API middleware, serving the frontend and API together. Configure `.env.local` and apply the database schema before opening the app.
+`npm start` and `npm run dev` run Vite with the project API middleware, serving the frontend and API together. Configure `.env.local` with working `DATABASE_URL`, `DATABASE_ADMIN_URL`, SMTP and Google settings as needed. Apply the database schema and privileges with `npm run db:migrate` using the database-owner `DATABASE_ADMIN_URL` before testing sign-up.
 
 ## Deploy to Vercel
 
-Import this repository in Vercel, add the environment variables above, and deploy. `vercel.json` configures the Vite build output and SPA routes; the `api/` directory provides the serverless API. Apply `db/schema.sql` to the production database with `npm run db:migrate` using the production `DATABASE_ADMIN_URL` before using the deployed app.
+Import this repository in Vercel, add the runtime environment variables above, and deploy. Keep `DATABASE_ADMIN_URL` out of Vercel. Before using the deployed app, run `npm run db:migrate` locally with the production database owner's connection string in local `DATABASE_ADMIN_URL`; the command applies the schema and runtime privileges. `vercel.json` configures the Vite build output and SPA routes; the `api/` directory provides the serverless API.
 
 ## Checks
 

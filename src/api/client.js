@@ -53,6 +53,10 @@ export const api = {
   auth: {
     me: async () => (await request('/api/auth/me')).user,
     loginViaEmailPassword: (email, password) => post('/api/auth/login', { email, password }),
+    register: (email, password) => post('/api/auth/register', { email, password }),
+    verifyRegistration: (email, code) =>
+      post('/api/auth/register/verify', { email, code }),
+    resendRegistrationCode: (email) => post('/api/auth/register/resend', { email }),
     loginWithProvider: (provider, returnTo = '/') => {
       if (provider !== 'google') throw new Error('Unsupported sign-in provider.');
       const params = new URLSearchParams({ returnTo });

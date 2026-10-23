@@ -14,7 +14,9 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(() => {
     const code = new URLSearchParams(window.location.search).get("error");
-    if (code === "account_not_invited") return "Your Google account has not been invited yet.";
+    if (code === "google_account_conflict" || code === "account_not_invited") {
+      return "This Google account could not be linked to the Ministry Flow account.";
+    }
     if (code === "google_failed") return "Google sign-in failed. Please try again.";
     if (code === "google_not_configured") return "Google sign-in is not configured yet.";
     return "";
@@ -48,7 +50,15 @@ export default function Login() {
       title="Welcome back"
       subtitle="Log in to your account"
       footer={
-        <>Accounts are created by an administrator.</>
+        <>
+          Don&apos;t have an account?{" "}
+          <Link
+            to={returnTo === "/" ? "/register" : `/register?returnTo=${encodeURIComponent(returnTo)}`}
+            className="font-medium text-primary hover:underline"
+          >
+            Sign up
+          </Link>
+        </>
       }
     >
       <Button

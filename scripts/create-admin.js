@@ -16,18 +16,22 @@ const client = await pool.connect();
 try {
   await client.query('BEGIN');
   await client.query("SELECT pg_advisory_xact_lock(hashtext('ministry-flow-initial-admin'))");
-  const existing = await client.query('SELECT 1 FROM app_users LIMIT 1');
-  if (existing.rowCount) {
-    throw new Error('An account already exists. Use the account creation command for additional users.');
+  const existingAdmin = await client.query("SELECT 1 FROM app_users WHERE role = 'admin' LIMIT 1");
+  if (existingAdmin.rowCount) {
+    throw new Error('An administrator already exists. Use the account creation command for additional users.');
   }
   const passwordHash = await bcrypt.hash(password, 12);
   await client.query(
     `INSERT INTO app_users (email, password_hash, role)
-     VALUES ($1, $2, 'admin')`,
+     VALUES ($1, $2, 'admin')
+     ON CONFLICT (lower(email)) DO UPDATE SET
+       password_hash = EXCLUDED.password_hash,
+       role = 'admin',
+       updated_at = now()`,
     [email, passwordHash]
   );
   await client.query('COMMIT');
-  console.log(`Initial administrator created: ${email}`);
+  console.log(`Initial administrator is ready: ${email}`);
 } catch (error) {
   await client.query('ROLLBACK');
   console.error('Could not create initial administrator:', error.message);
